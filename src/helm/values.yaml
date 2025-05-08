@@ -1,0 +1,21 @@
+db:
+  host: "postgres.postgres"
+  port: 5432
+  adminUser: "postgres"
+  adminPassword: "adminpass"
+  name: "my_schema"
+  user: "appuser"
+  password: "apppass"
+  image:
+    initRepository: postgres
+    initTag: latest
+
+service:
+  name: my-service
+  image:
+    repository: myapp/image
+    tag: latest
+    initRepository: postgres
+    initTag: latest
+
+resources: {}

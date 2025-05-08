@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.service.name }}-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.service.name }}-app
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.service.name }}-app
+    spec:
+      initContainers:
+        - name: init-db
+          image: "{{ .Values.db.image.initRepository }}:{{ .Values.db.image.initTag }}"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              PGPASSWORD={{ .Values.db.adminPassword }} psql -h {{ .Values.db.host }} -U {{ .Values.db.adminUser }} -d postgres <<EOF
+              DO \$\$
+              BEGIN
+                IF NOT EXISTS (SELECT FROM pg_catalog.pg_user WHERE usename = '{{ .Values.db.user }}') THEN
+                  CREATE USER "{{ .Values.db.user }}" WITH PASSWORD '{{ .Values.db.password }}';
+                END IF;
+                EXECUTE format('CREATE SCHEMA IF NOT EXISTS %I AUTHORIZATION "{{ .Values.db.user }}"', '{{ .Values.db.name }}');
+              END
+              \$\$;
+              EOF
+          env:
+            - name: PGPASSWORD
+              value: "{{ .Values.db.adminPassword }}"
+      containers:
+        - name: main-app
+          image: "{{ .Values.service.image.repository }}:{{ .Values.service.image.tag }}"
+          envFrom:
+            - secretRef:
+                name: db-init-secret
+

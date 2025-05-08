@@ -1,0 +1,4 @@
+apiVersion: v2
+name: qara-msvc
+description: A Helm chart to start a qaralink microservice connected to its database
+version: 0.1.0

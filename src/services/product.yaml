@@ -1,0 +1,13 @@
+db:
+  name: "product"
+  user: "product_user"
+  password: "product_pass"
+
+service:
+  name: qara-product-service
+  image:
+    repository: myapp/image
+    tag: latest
+
+
+resources: {}
