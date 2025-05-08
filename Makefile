@@ -11,12 +11,13 @@ KIND_URL_DARWIN := https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-darwin-amd64
 POSTGRES_MANIFEST := $(INFRA)/postgres-deployment.yaml
 
 # services
+DB_TIMEOUT := 60
 VALUES_DIR := src/services
 CHART_DIR := src/helm
 
 .DEFAULT_GOAL := help
 
-.PHONY: help check-kind install-kind create-network create-cluster start cleanup microservices check-helm install-helm
+.PHONY: help check-kind install-kind create-network create-cluster start cleanup microservices check-helm install-helm reset-database
 
 help:
 	@echo "Usage: make <target>"
@@ -108,7 +109,28 @@ database:
 	@kubectl apply -f $(POSTGRES_MANIFEST)
 	@echo "✅ PostgreSQL deployed."
 
-microservices: check-helm
+reset-database:
+	@echo "🧨 Resetting PostgreSQL deployment..."
+	@kubectl delete pvc postgres-pvc -n postgres || true
+	@kubectl delete pod -l app=postgres -n postgres || true
+	@kubectl apply -f postgres-deployment.yaml
+	@echo "✅ PostgreSQL has been reset with fresh volume and credentials."
+
+wait-for-postgres:
+	@echo "⏳ Waiting for PostgreSQL to be ready..."
+	@i=0; until kubectl run pgwait --image=postgres:15 --rm -i --restart=Never \
+		-n postgres -- pg_isready -h postgres -U postgres > /dev/null 2>&1; do \
+		i=$$((i+1)); \
+		if [ $$i -gt $(DB_TIMEOUT) ]; then \
+			echo "❌ PostgreSQL not ready after $(DB_TIMEOUT) seconds"; \
+			exit 1; \
+		fi; \
+		echo "⏱  Waiting... ($$i)"; \
+		sleep 1; \
+	done
+	@echo "✅ PostgreSQL is ready!"
+
+microservices: check-helm wait-for-postgres
 	@echo "🚀 Deploying microservices from Helm values in $(VALUES_DIR)/..."
 	@for values_file in `ls $(VALUES_DIR)/*.yaml`; do \
 		namespace=$$(basename $$values_file .yaml); \

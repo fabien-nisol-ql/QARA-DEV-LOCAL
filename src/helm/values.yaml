@@ -2,7 +2,7 @@ db:
   host: "postgres.postgres"
   port: 5432
   adminUser: "postgres"
-  adminPassword: "adminpass"
+  adminPassword: "password"
   name: "my_schema"
   user: "appuser"
   password: "apppass"

@@ -36,12 +36,8 @@ spec:
         - name: postgres
           image: postgres:15
           env:
-            - name: POSTGRES_USER
-              value: "user"
             - name: POSTGRES_PASSWORD
               value: "password"
-            - name: POSTGRES_DB
-              value: "mydb"
           ports:
             - containerPort: 5432
           volumeMounts:
